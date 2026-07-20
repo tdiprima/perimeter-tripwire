@@ -21,7 +21,7 @@ echo "[+] Local sentinel active. Monitoring ${MONITOR_DIR}..."
 
 fswatch --recursive --event Created --event Updated "${MONITOR_DIR}" | while read -r FILE; do
     # Skip known-safe development noise
-    if echo "${FILE}" | grep -qE '\.cache|\.git/|node_modules|__pycache__'; then
+    if echo "${FILE}" | grep -qE '\.cache|\.git/|node_modules|__pycache__|\.dropbox'; then
         continue
     fi
 
