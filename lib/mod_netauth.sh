@@ -48,8 +48,13 @@ tw_mod_netauth() {
         esac ;;
       *) continue ;;
     esac
-    [ -n "$ip" ] && [[ " $ips " != *" $ip "* ]] && ips+="$ip "
-    tw_log "$type" "$sev" when="$ts" user="$user" ip="$ip" port="$port" method="$method" process="$proc" msg="$msg"
+    local -a geo=(); local who=""
+    if [ -n "$ip" ]; then
+      while IFS= read -r kv; do geo+=("$kv"); done < <(tw_enrich_kv "$ip")
+      who=$(tw_enrich_summary "$ip")
+      [[ " $ips " != *" $ip "* ]] && ips+="$ip ($who) "
+    fi
+    tw_log "$type" "$sev" when="$ts" user="$user" ip="$ip" port="$port" method="$method" process="$proc" msg="$msg" "${geo[@]}"
   done <<< "$raw"
 
   if (( n_fail > 0 )); then

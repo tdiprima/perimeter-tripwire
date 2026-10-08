@@ -1,0 +1,56 @@
+#!/bin/bash
+# Stage 5: who owns this IP? Prints key=value lines. Cached per IP in state dir.
+# Sources (all built-in): rDNS (dig), Team Cymru ASN whois, RIR whois, arp for LAN.
+# usage: enrich-ip <ip>
+set -u
+ip=${1:?ip}
+source "$(dirname "$0")/../lib/common.sh"
+CACHE="$TW_STATE_DIR/ipcache"; mkdir -p "$CACHE"
+TTL=${TW_ENRICH_TTL:-604800}   # 7 days
+f="$CACHE/$ip"
+if [ -f "$f" ] && (( $(date +%s) - $(stat -f%m "$f") < TTL )); then cat "$f"; exit 0; fi
+
+scope=public
+case "$ip" in
+  127.*|::1|0.0.0.0)                scope=loopback ;;
+  10.*|192.168.*|169.254.*|fe80:*)  scope=lan ;;
+  172.1[6-9].*|172.2[0-9].*|172.3[01].*) scope=lan ;;
+esac
+
+{
+  echo "ip=$ip"; echo "scope=$scope"
+  rdns=$(dig +short +time=2 +tries=1 -x "$ip" 2>/dev/null | head -1 | sed 's/\.$//')
+  echo "rdns=${rdns:-}"
+  if [ "$scope" = lan ]; then
+    mac=$(arp -n "$ip" 2>/dev/null | sed -n 's/.* at \([0-9a-f:]*\) .*/\1/p' | head -1)
+    echo "mac=${mac:-}"
+    gw=$(route -n get default 2>/dev/null | awk '/gateway/{print $2}')
+    [ "$ip" = "$gw" ] && echo "note=default gateway (your router)"
+    echo "class=lan-device"
+  elif [ "$scope" = public ]; then
+    cy=$(whois -h whois.cymru.com " -v $ip" 2>/dev/null | tail -1)
+    asn=$(echo "$cy" | awk -F'|' '{gsub(/ /,"",$1); print $1}')
+    cc=$(echo "$cy" | awk -F'|' '{gsub(/ /,"",$4); print $4}')
+    prefix=$(echo "$cy" | awk -F'|' '{gsub(/ /,"",$3); print $3}')
+    asname=$(echo "$cy" | awk -F'|' '{sub(/^ /,"",$7); sub(/ $/,"",$7); print $7}')
+    [ "$asn" = "AS" ] && asn="" && asname=""
+    rir=$(whois "$ip" 2>/dev/null)
+    org=$(echo "$rir" | grep -iE '^(OrgName|org-name|owner|descr):' | head -1 | sed 's/^[^:]*: *//')
+    netname=$(echo "$rir" | grep -iE '^(NetName|netname):' | head -1 | sed 's/^[^:]*: *//')
+    country=$(echo "$rir" | grep -iE '^country:' | head -1 | sed 's/^[^:]*: *//')
+    abuse=$(echo "$rir" | grep -iE '^(OrgAbuseEmail|abuse-mailbox|abuse-c):' | head -1 | sed 's/^[^:]*: *//')
+    echo "asn=${asn:-}"; echo "asname=${asname:-}"; echo "prefix=${prefix:-}"
+    echo "org=${org:-}"; echo "netname=${netname:-}"; echo "country=${cc:-$country}"; echo "abuse=${abuse:-}"
+    hay=$(printf '%s %s %s %s' "$asname" "$org" "$netname" "$rdns" | tr '[:lower:]' '[:upper:]')
+    class=other
+    case "$hay" in
+      *CENSYS*|*SHODAN*|*SHADOWSERVER*|*BINARYEDGE*|*STRETCHOID*|*INTERNET-MEASUREMENT*|*RAPID7*|*ONYPHE*|*LEAKIX*|*PALOALTO*|*DRIFTNET*|*RECYBER*) class=scanner ;;
+      *AMAZON*|*GOOGLE*|*MICROSOFT*|*AZURE*|*DIGITALOCEAN*|*OVH*|*HETZNER*|*LINODE*|*AKAMAI*|*VULTR*|*CHOOPA*|*ORACLE*|*ALIBABA*|*TENCENT*|*CLOUDFLARE*|*CONTABO*|*SCALEWAY*|*M247*|*DATACAMP*|*LEASEWEB*|*SERVERMANIA*) class=cloud ;;
+      *COMCAST*|*VERIZON*|*AT-T*|*ATT-*|*SPECTRUM*|*CHARTER*|*COX*|*OPTIMUM*|*CABLEVISION*|*T-MOBILE*|*FRONTIER*|*CENTURYLINK*|*LUMEN*|*TELECOM*|*BROADBAND*|*CABLE*|*DSL*|*WIRELESS*|*MOBILE*|*RES-*|*RESIDENTIAL*) class=residential ;;
+    esac
+    echo "class=$class"
+  else
+    echo "class=local"
+  fi
+} > "$f.tmp" && mv "$f.tmp" "$f"
+cat "$f"

@@ -31,7 +31,7 @@ uninstall.sh        unloads + removes plist
    unified log; capture remote IP and username; notify.
 4. **Honeypot listener** — `bin/honeypot.py` (stdlib python3 from Xcode CLT; `nc` cannot report the peer address) on tempting unprivileged
    port(s); capture the first bytes of the handshake, source IP/port, close immediately.
-5. **De-anonymize** — enrich every remote IP: reverse DNS, `whois` ASN/org/country,
+5. **De-anonymize** — `bin/enrich-ip` + `lib/enrich.sh`, `tripwire who <ip>`: reverse DNS, Team Cymru ASN, RIR `whois` org/country/abuse, `arp` MAC for LAN,
    with a local cache; flag cloud/scanner ranges vs. residential; include in alert text.
 6. **Hardening & reporting** — log rotation, rate-limit alerts (no notification storms),
    `tripwire report` summary command, optional webcam snapshot on local failures.

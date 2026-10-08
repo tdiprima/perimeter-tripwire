@@ -31,6 +31,23 @@ def should_notify(ip, port):
     except FileNotFoundError: pass
     open(stamp, "w").close(); return True
 
+ENRICH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "enrich-ip")
+
+def enrich(ip):
+    try:
+        out = subprocess.run(["/bin/bash", ENRICH, ip], capture_output=True, text=True, timeout=20).stdout
+    except Exception:
+        return {}
+    d = dict(l.split("=", 1) for l in out.splitlines() if "=" in l)
+    d.pop("ip", None); return {"geo_" + k: v for k, v in d.items()}
+
+def summary(g):
+    sc = g.get("geo_scope")
+    if sc == "loopback": return "this Mac (localhost)"
+    if sc == "lan": return f"LAN {g.get('geo_rdns') or ''} mac {g.get('geo_mac') or '?'} {g.get('geo_note') or ''}".strip()
+    asn = g.get("geo_asn"); org = g.get("geo_org") or g.get("geo_asname") or "unknown"
+    return f"{'AS'+asn+' ' if asn else ''}{org}, {g.get('geo_country') or '??'} [{g.get('geo_class') or '?'}]"
+
 def handle(conn, addr, port, banner):
     ip, sport = addr[0], addr[1]
     t0 = time.time(); data = b""
@@ -50,13 +67,14 @@ def handle(conn, addr, port, banner):
         try: conn.close()
         except OSError: pass
     printable = "".join(c if 32 <= ord(c) < 127 else "." for c in data[:256].decode("latin-1"))
+    geo = enrich(ip)
     log("honeypot.hit", "alert", ip=ip, src_port=sport, port=port, bytes=len(data),
-        duration=round(time.time() - t0, 2), payload=printable, hex=data[:64].hex())
+        duration=round(time.time() - t0, 2), payload=printable, hex=data[:64].hex(), **geo)
     if data:
         fn = f"{datetime.datetime.now().strftime('%Y%m%dT%H%M%S')}-{port}-{ip}.bin"
         with open(os.path.join(CAP_DIR, fn), "wb") as f: f.write(data)
     if should_notify(ip, port):
-        notify(f"Honeypot hit on port {port}", f"{ip}:{sport} sent {len(data)} bytes: {printable[:60]}")
+        notify(f"Honeypot hit on port {port}", f"{ip} ({summary(geo)}) sent {len(data)} bytes: {printable[:40]}")
 
 def main():
     os.makedirs(CAP_DIR, exist_ok=True); os.chmod(CAP_DIR, 0o700)
