@@ -33,5 +33,8 @@ uninstall.sh        unloads + removes plist
    port(s); capture the first bytes of the handshake, source IP/port, close immediately.
 5. **De-anonymize** — `bin/enrich-ip` + `lib/enrich.sh`, `tripwire who <ip>`: reverse DNS, Team Cymru ASN, RIR `whois` org/country/abuse, `arp` MAC for LAN,
    with a local cache; flag cloud/scanner ranges vs. residential; include in alert text.
-6. **Hardening & reporting** — log rotation, rate-limit alerts (no notification storms),
-   `tripwire report` summary command, optional webcam snapshot on local failures.
+6. **Hardening & reporting** — `bin/notify` rate limiter (per-key cooldown + global cap,
+   suppressed count reported), `lib/mod_housekeeping.sh` (rotate logs >20MB, prune captures
+   >30d, perms), `tripwire report [days]` (`bin/report.py`), `tripwire status`,
+   `lib/snapshot.sh` evidence capture on local failures (webcam via `imagesnap` if installed,
+   else `screencapture`; needs one-time Camera / Screen Recording permission).

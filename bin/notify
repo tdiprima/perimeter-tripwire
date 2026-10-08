@@ -1,0 +1,36 @@
+#!/bin/bash
+# Rate-limited macOS notification. usage: notify <key> <title> <message> [sound]
+# Per-key cooldown (TW_NOTIFY_COOLDOWN, default 120s) + global cap
+# (TW_NOTIFY_MAX per TW_NOTIFY_WINDOW, default 8 per 60s); suppressed alerts are
+# counted and reported once the storm passes. Everything is still logged.
+set -u
+source "$(dirname "$0")/../lib/common.sh"
+key=$1 title=$2 msg=$3 sound=${4:-Basso}
+CD=${TW_NOTIFY_COOLDOWN:-120}; MAX=${TW_NOTIFY_MAX:-8}; WIN=${TW_NOTIFY_WINDOW:-60}
+D="$TW_STATE_DIR/notify"; mkdir -p "$D"
+now=$(date +%s); keyf="$D/k.$(printf '%s' "$key" | tr -c 'A-Za-z0-9._-' '_')"
+sup="$D/suppressed"; win="$D/window"
+
+send() {
+  local t=${1//\"/\\\"} m=${2//\"/\\\"}
+  /usr/bin/osascript -e "display notification \"$m\" with title \"$t\" subtitle \"Perimeter Tripwire\" sound name \"$3\"" >/dev/null 2>&1
+}
+
+# per-key cooldown
+if [ -f "$keyf" ] && (( now - $(stat -f%m "$keyf") < CD )); then
+  echo $(( $(cat "$sup" 2>/dev/null || echo 0) + 1 )) > "$sup"; exit 0
+fi
+# global window
+[ -f "$win" ] && (( now - $(stat -f%m "$win") >= WIN )) && rm -f "$win"
+cnt=$(cat "$win" 2>/dev/null || echo 0)
+if (( cnt >= MAX )); then
+  echo $(( $(cat "$sup" 2>/dev/null || echo 0) + 1 )) > "$sup"; exit 0
+fi
+[ -f "$win" ] || { echo 0 > "$win"; }
+echo $((cnt+1)) > "$win"; touch "$keyf"
+# flush suppression summary
+if [ -f "$sup" ]; then
+  s=$(cat "$sup"); rm -f "$sup"
+  (( s > 0 )) && msg="$msg (+$s earlier alert(s) suppressed; see events.jsonl)"
+fi
+send "$title" "$msg" "$sound"

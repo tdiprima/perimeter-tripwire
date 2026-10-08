@@ -18,10 +18,10 @@ def log(type_, sev, **kv):
     with open(EVENTS, "a") as f: f.write(json.dumps(rec) + "\n")
     print(f"{rec['ts']} {sev} {type_} " + " ".join(f"{k}={v}" for k, v in kv.items()), flush=True)
 
-def notify(title, msg, sound="Sosumi"):
-    msg = msg.replace("\\", "\\\\").replace('"', '\\"'); title = title.replace('"', '\\"')
-    subprocess.run(["/usr/bin/osascript", "-e",
-        f'display notification "{msg}" with title "{title}" subtitle "Perimeter Tripwire" sound name "{sound}"'],
+NOTIFY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "notify")
+
+def notify(title, msg, sound="Sosumi", key=None):
+    subprocess.run(["/bin/bash", NOTIFY, key or title, title, msg, sound],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def should_notify(ip, port):

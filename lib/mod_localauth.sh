@@ -57,6 +57,7 @@ tw_mod_localauth() {
   done <<< "$raw"
 
   if (( n > 0 )); then
+    tw_snapshot localauth
     tw_notify "Login attempt blocked" "$n failed auth attempt(s) via ${src_procs:-loginwindow/lockscreen}. Console user: $console_user." Sosumi
   fi
 }
