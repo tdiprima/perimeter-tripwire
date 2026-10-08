@@ -11,6 +11,7 @@ Two attack surfaces are covered:
 ## Layout
 ```
 bin/tripwire        main daemon (loop, runs enabled modules)
+bin/honeypot.py     fake-service listener (stage 4), supervised by lib/mod_honeypot.sh
 lib/common.sh       config, paths, JSON logging
 lib/notify.sh       osascript notifications
 lib/<module>.sh     one file per detector (added per stage)
@@ -28,7 +29,7 @@ uninstall.sh        unloads + removes plist
    Log event (user targeted, source process, timestamp, console user) and notify.
 3. **Network login detection** — watch `sshd` / `screensharingd` auth failures in the
    unified log; capture remote IP and username; notify.
-4. **Honeypot listener** — lightweight `nc`-based listener on tempting unprivileged
+4. **Honeypot listener** — `bin/honeypot.py` (stdlib python3 from Xcode CLT; `nc` cannot report the peer address) on tempting unprivileged
    port(s); capture the first bytes of the handshake, source IP/port, close immediately.
 5. **De-anonymize** — enrich every remote IP: reverse DNS, `whois` ASN/org/country,
    with a local cache; flag cloud/scanner ranges vs. residential; include in alert text.
