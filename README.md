@@ -49,3 +49,15 @@ Things that bit me and weren't obvious:
    to see them at all.
 
 <br>
+
+## Tests
+
+```
+tests/run.sh                      # whole suite (bash 3.2 + system python3; no network, no real notifications)
+tests/run.sh -p test_notify.py    # one file
+```
+
+Every test runs in a throwaway HOME/log/state dir with stubbed `log`, `osascript`, `dscl`, `who`,
+`dig`, `whois`, `arp`, `route`, `launchctl` and `screencapture`, so fixtures are replayed instead of
+touching the real unified log, Notification Center, the network or launchd. The honeypot tests bind
+real loopback sockets on free ports.
