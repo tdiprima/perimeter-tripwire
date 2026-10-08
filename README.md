@@ -24,3 +24,28 @@ Tuning: set env vars in the launchd plist `EnvironmentVariables` dict —
 `TW_INTERVAL`, `TW_HP_PORTS`, `TW_HP_ENABLED`, `TW_NOTIFY_COOLDOWN`, `TW_NOTIFY_MAX`,
 `TW_SNAPSHOT`, `TW_ROTATE_MB`, `TW_KEEP_DAYS`. After editing: `./install.sh`.
 See PLAN.md for the stage-by-stage design.
+
+## Lessons learned
+
+Things that bit me and weren't obvious:
+
+1. **`nc` can't be a honeypot on macOS.** The plan was `nc -l <port>` as a zero-dependency
+   listener. macOS's `nc` never reports the peer address in listen mode (`-v` prints nothing),
+   and it exits the instant the client disconnects, so a quick port scan is gone before `lsof`
+   can catch who it was. Switched to a stdlib Python socket server, where `accept()` hands you
+   the peer directly.
+
+2. **launchd agents can't read `~/Desktop`.** The first install pointed the plist at the repo on
+   the Desktop and launchd got `Operation not permitted` forever. Desktop, Documents, and
+   Downloads are TCC-protected, and a background agent never gets the permission prompt.
+   `install.sh` now copies `bin/` and `lib/` to `~/Library/Application Support/` and runs from there.
+
+3. **`launchctl bootout` returns before the job is actually gone.** `bootout` followed
+   immediately by `bootstrap` fails with `Bootstrap failed: 5: Input/output error` because the
+   old instance is still tearing down. A short sleep between them fixes it.
+
+4. **`log` is a zsh builtin.** `log show` inside a script silently does the wrong thing; call
+   `/usr/bin/log` explicitly. Also, sshd's auth messages are info-level, so you need `--info`
+   to see them at all.
+
+<br>
