@@ -27,7 +27,7 @@ cat > "$PLIST" <<P
   <key>StandardErrorPath</key><string>$LOGDIR/daemon.log</string>
 </dict></plist>
 P
-launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
+launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null && sleep 2 || true
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
 echo "installed $LABEL"
 launchctl print "gui/$(id -u)/$LABEL" | grep -E 'state|pid' | head -3

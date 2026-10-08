@@ -12,8 +12,10 @@ case "$cmd" in
     tw_notify "Tripwire test" "Logging and notifications work."
     echo "ok: $TW_EVENTS"; exit 0 ;;
   tail) exec tail -f "$TW_EVENTS" ;;
+  scan)
+    for fn in $(declare -F | awk '{print $3}' | grep '^tw_mod_'); do echo "running $fn"; "$fn"; done; exit 0 ;;
   run) ;;
-  *) echo "usage: tripwire [run|test|tail]"; exit 1 ;;
+  *) echo "usage: tripwire [run|test|tail|scan]"; exit 1 ;;
 esac
 
 trap 'tw_log daemon.stop info; exit 0' TERM INT
