@@ -70,7 +70,7 @@ class HoneypotTest(HoneypotBase):
         self.assertLess(h["duration"], float(self.hold) + 1)
         caps = os.listdir(self.cap)
         self.assertEqual(len(caps), 1)
-        self.assertTrue(caps[0].endswith(f"-{self.p1}-127.0.0.1.bin"))
+        self.assertTrue(caps[0].endswith(f"-{self.p1}-127.0.0.1-{lport}.bin"))
         with open(os.path.join(self.cap, caps[0]), "rb") as f:
             self.assertEqual(f.read(), b"SSH-2.0-evil\r\n")
         self.assertEqual(oct(os.stat(self.cap).st_mode & 0o777), "0o700")

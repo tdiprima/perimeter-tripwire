@@ -71,7 +71,7 @@ def handle(conn, addr, port, banner):
     log("honeypot.hit", "alert", ip=ip, src_port=sport, port=port, bytes=len(data),
         duration=round(time.time() - t0, 2), payload=printable, hex=data[:64].hex(), **geo)
     if data:
-        fn = f"{datetime.datetime.now().strftime('%Y%m%dT%H%M%S')}-{port}-{ip}.bin"
+        fn = f"{datetime.datetime.now().strftime('%Y%m%dT%H%M%S')}-{port}-{ip}-{sport}.bin"
         with open(os.path.join(CAP_DIR, fn), "wb") as f: f.write(data)
     if should_notify(ip, port):
         notify(f"Honeypot hit on port {port}", f"{ip} ({summary(geo)}) sent {len(data)} bytes: {printable[:40]}")

@@ -18,10 +18,15 @@ tw_mod_localauth() {
   now=$(date "+%Y-%m-%d %H:%M:%S")
   if [ -f "$TW_LA_STATE" ]; then start=$(cat "$TW_LA_STATE")
   else start=$(date -v-5M "+%Y-%m-%d %H:%M:%S"); fi
-  printf '%s' "$now" > "$TW_LA_STATE"
 
   local raw
-  raw=$(/usr/bin/log show --start "$start" --end "$now" --style compact --predicate "$TW_LA_PRED" 2>/dev/null | grep -v '^Timestamp')
+  if ! raw=$(/usr/bin/log show --start "$start" --end "$now" --style compact --predicate "$TW_LA_PRED" 2>/dev/null); then
+    printf '%s' "$start" > "$TW_LA_STATE"     # keep the window; retry it next poll
+    tw_log log.error warn module=localauth start="$start"
+    return 0
+  fi
+  printf '%s' "$now" > "$TW_LA_STATE"
+  raw=$(printf '%s\n' "$raw" | grep -v '^Timestamp')
   [ -z "$raw" ] && return 0
 
   local console_user active_ttys src_procs

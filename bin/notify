@@ -16,6 +16,14 @@ send() {
   /usr/bin/osascript -e "display notification \"$m\" with title \"$t\" subtitle \"Perimeter Tripwire\" sound name \"$3\"" >/dev/null 2>&1
 }
 
+# serialize the throttle bookkeeping (mkdir is atomic); a stale lock is broken after 5s
+lock="$D/lock"; i=0
+until mkdir "$lock" 2>/dev/null; do
+  i=$((i+1)); (( i > 50 )) && { rm -rf "$lock"; continue; }
+  sleep 0.1
+done
+trap 'rmdir "$lock" 2>/dev/null' EXIT
+
 # per-key cooldown
 if [ -f "$keyf" ] && (( now - $(stat -f%m "$keyf") < CD )); then
   echo $(( $(cat "$sup" 2>/dev/null || echo 0) + 1 )) > "$sup"; exit 0
@@ -33,4 +41,5 @@ if [ -f "$sup" ]; then
   s=$(cat "$sup"); rm -f "$sup"
   (( s > 0 )) && msg="$msg (+$s earlier alert(s) suppressed; see events.jsonl)"
 fi
+rmdir "$lock" 2>/dev/null; trap - EXIT
 send "$title" "$msg" "$sound"

@@ -13,10 +13,15 @@ tw_mod_netauth() {
   now=$(date "+%Y-%m-%d %H:%M:%S")
   if [ -f "$TW_NA_STATE" ]; then start=$(cat "$TW_NA_STATE")
   else start=$(date -v-5M "+%Y-%m-%d %H:%M:%S"); fi
-  printf '%s' "$now" > "$TW_NA_STATE"
 
   local raw
-  raw=$(/usr/bin/log show --info --start "$start" --end "$now" --style compact --predicate "$TW_NA_PRED" 2>/dev/null | grep -v '^Timestamp')
+  if ! raw=$(/usr/bin/log show --info --start "$start" --end "$now" --style compact --predicate "$TW_NA_PRED" 2>/dev/null); then
+    printf '%s' "$start" > "$TW_NA_STATE"     # keep the window; retry it next poll
+    tw_log log.error warn module=netauth start="$start"
+    return 0
+  fi
+  printf '%s' "$now" > "$TW_NA_STATE"
+  raw=$(printf '%s\n' "$raw" | grep -v '^Timestamp')
   [ -z "$raw" ] && return 0
 
   local n_fail=0 n_ok=0 line ts proc msg type sev user ip port method ips=""

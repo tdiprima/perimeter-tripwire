@@ -18,6 +18,12 @@ tw_json_str() {
   local s=$1
   s=${s//\\/\\\\}; s=${s//\"/\\\"}
   s=${s//$'\n'/\\n}; s=${s//$'\r'/\\r}; s=${s//$'\t'/\\t}
+  if [[ $s == *[[:cntrl:]]* ]]; then   # rare: escape the remaining C0 controls as \u00XX
+    local i c
+    for i in 1 2 3 4 5 6 7 8 11 12 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31; do
+      c=$(printf "\\$(printf '%03o' "$i")"); [[ $s == *"$c"* ]] && s=${s//"$c"/$(printf '\\u%04x' "$i")}
+    done
+  fi
   printf '"%s"' "$s"
 }
 
