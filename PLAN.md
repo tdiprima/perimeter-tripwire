@@ -6,7 +6,7 @@ and alerts via macOS notification (`osascript`).
 
 Two attack surfaces are covered:
 - **Local**: failed logins at the login window / lock screen, failed `sudo`, failed Touch ID. (Stage 2: `lib/mod_localauth.sh`; `tripwire scan` runs modules once.)
-- **Network**: SSH / screen-sharing login attempts and port probes against a honeypot listener.
+- **Network**: SSH / screen-sharing login attempts (Stage 3: `lib/mod_netauth.sh`) and port probes against a honeypot listener.
 
 ## Layout
 ```
