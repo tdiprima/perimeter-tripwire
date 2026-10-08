@@ -35,6 +35,8 @@ uninstall.sh        unloads + removes plist
    with a local cache; flag cloud/scanner ranges vs. residential; include in alert text.
 6. **Hardening & reporting** — `bin/notify` rate limiter (per-key cooldown + global cap,
    suppressed count reported), `lib/mod_housekeeping.sh` (rotate logs >20MB, prune captures
-   >30d, perms), `tripwire report [days]` (`bin/report.py`), `tripwire status`,
+   &gt;30d, perms), `tripwire report [days]` (`bin/report.py`), `tripwire status`,
    `lib/snapshot.sh` evidence capture on local failures (webcam via `imagesnap` if installed,
    else `screencapture`; needs one-time Camera / Screen Recording permission).
+
+<br>
