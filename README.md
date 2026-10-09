@@ -48,8 +48,6 @@ Things that bit me and weren't obvious:
    `/usr/bin/log` explicitly. Also, sshd's auth messages are info-level, so you need `--info`
    to see them at all.
 
-<br>
-
 ## Tests
 
 ```
@@ -61,3 +59,5 @@ Every test runs in a throwaway HOME/log/state dir with stubbed `log`, `osascript
 `dig`, `whois`, `arp`, `route`, `launchctl` and `screencapture`, so fixtures are replayed instead of
 touching the real unified log, Notification Center, the network or launchd. The honeypot tests bind
 real loopback sockets on free ports.
+
+<br>

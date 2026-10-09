@@ -6,6 +6,7 @@ UUID = "21CD598F-85AA-4379-8A99-94E27126C666"
 OD_FAIL = f'2026-10-08 14:00:01.123 E  opendirectoryd[123:456] [com.apple.opendirectoryd:auth] Authentication failed for "alice" ({UUID}) - wrong password'
 AUTHTOK = '2026-10-08 14:00:01.100 E  screensharingd[300:7] The authtok is incorrect'
 SUDO = '2026-10-08 14:00:02.000 E  sudo[200:1] bob : 1 incorrect password attempt ; TTY=ttys000 ; PWD=/Users/bob ; USER=root ; COMMAND=/bin/ls'
+AKD = '2026-10-08 14:00:01.050 A  akd[676:117b] (CFOpenDirectory) Verify basic credentials'
 TOUCHID = '2026-10-08 14:00:03.500 Df biometrickitd[400:9] [com.apple.biometrickitd:match] Match failed for finger 2'
 
 
@@ -56,6 +57,26 @@ class LocalAuthTest(unittest.TestCase):
         self.assertEqual(e["user"], "unknown")
         self.assertEqual(e["source"], "loginwindow/lockscreen")
         self.assertIn("via loginwindow/lockscreen", self.sb.notifications()[0]["message"])
+
+    def test_akd_cached_password_check_is_a_warning_not_a_lockscreen_alert(self):
+        self.sb.log_fixture(AKD, OD_FAIL)
+        self.sb.module("localauth", TW_SNAPSHOT="1")
+        (e,) = self.sb.events()
+        self.assertEqual(e["type"], "localauth.failed")
+        self.assertEqual(e["severity"], "warn")
+        self.assertEqual(e["source"], "akd")
+        self.assertEqual(self.sb.calls_of("screencapture"), [])
+        (nt,) = self.sb.notifications()
+        self.assertEqual(nt["title"], "Stale iCloud password")
+        self.assertEqual(nt["sound"], "Basso")
+
+    def test_akd_check_does_not_mask_a_real_pam_failure(self):
+        self.sb.log_fixture(AKD, AUTHTOK, OD_FAIL)
+        self.sb.module("localauth")
+        (e,) = self.sb.events()
+        self.assertEqual(e["severity"], "alert")
+        self.assertEqual(e["source"], "screensharingd")
+        self.assertEqual(self.sb.notifications()[0]["title"], "Login attempt blocked")
 
     def test_quiet_window_logs_nothing_and_sends_nothing(self):
         self.sb.log_fixture()
