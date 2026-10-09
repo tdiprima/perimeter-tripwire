@@ -1,4 +1,4 @@
-# Perimeter Tripwire
+# Perimeter Tripwire 🕸️ 🔔
 
 Zero-dependency macOS login/intrusion monitor (bash + built-ins + system python3).
 Survives reboots via launchd. Logs everything to `~/Library/Logs/perimeter-tripwire/events.jsonl`,
