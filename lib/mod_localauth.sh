@@ -6,6 +6,7 @@
 # iCloud) re-verifying its cached copy of the login password are a stale credential,
 # not an intruder: they are logged as warn with source=akd and get a quieter notice.
 TW_LA_STATE="$TW_STATE_DIR/localauth.last"
+TW_AKD_NOTIFY="${TW_AKD_NOTIFY:-0}"   # 1 = also notify on akd stale-password failures (logged either way)
 TW_LA_PRED='(subsystem == "com.apple.opendirectoryd" AND eventMessage CONTAINS "Authentication failed for")
   OR (process == "sudo" AND eventMessage CONTAINS "incorrect password attempt")
   OR (eventMessage CONTAINS "The authtok is incorrect")
@@ -71,7 +72,8 @@ tw_mod_localauth() {
 
   (( n == 0 )) && return 0
   if [ "$src_procs" = akd ] && (( n == n_akd )); then
-    tw_notify "Stale iCloud password" "Apple ID (akd) rejected $n cached login password check(s). Open System Settings > Apple Account and re-enter your Mac password." Basso
+    [ "$TW_AKD_NOTIFY" = 1 ] || return 0
+    tw_notify "Stale iCloud password" "Apple ID (akd) rejected $n cached login password check(s). Re-sync it via System Settings > Users & Groups > Change Password." Basso
   else
     tw_snapshot localauth
     tw_notify "Login attempt blocked" "$n failed auth attempt(s) via ${src_procs:-loginwindow/lockscreen}. Console user: $console_user." Sosumi

@@ -60,7 +60,7 @@ class LocalAuthTest(unittest.TestCase):
 
     def test_akd_cached_password_check_is_a_warning_not_a_lockscreen_alert(self):
         self.sb.log_fixture(AKD, OD_FAIL)
-        self.sb.module("localauth", TW_SNAPSHOT="1")
+        self.sb.module("localauth", TW_SNAPSHOT="1", TW_AKD_NOTIFY="1")
         (e,) = self.sb.events()
         self.assertEqual(e["type"], "localauth.failed")
         self.assertEqual(e["severity"], "warn")
@@ -69,6 +69,12 @@ class LocalAuthTest(unittest.TestCase):
         (nt,) = self.sb.notifications()
         self.assertEqual(nt["title"], "Stale iCloud password")
         self.assertEqual(nt["sound"], "Basso")
+
+    def test_akd_failures_are_silent_by_default(self):
+        self.sb.log_fixture(AKD, OD_FAIL)
+        self.sb.module("localauth")
+        self.assertEqual(len(self.sb.events()), 1)
+        self.assertEqual(self.sb.notifications(), [])
 
     def test_akd_check_does_not_mask_a_real_pam_failure(self):
         self.sb.log_fixture(AKD, AUTHTOK, OD_FAIL)

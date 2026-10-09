@@ -5,7 +5,7 @@ detects attempts to get into this MacBook, identifies the source, logs everythin
 and alerts via macOS notification (`osascript`).
 
 Two attack surfaces are covered:
-- **Local**: failed logins at the login window / lock screen, failed `sudo`, failed Touch ID. Failures caused by akd (Apple ID) re-checking a stale cached login password are logged as `warn` with `source=akd` and get a "Stale iCloud password" notice instead. (Stage 2: `lib/mod_localauth.sh`; `tripwire scan` runs modules once.)
+- **Local**: failed logins at the login window / lock screen, failed `sudo`, failed Touch ID. Failures caused by akd (Apple ID) re-checking its stale cached copy of the login password (not the Apple ID password) are logged as `warn` with `source=akd` and are not notified unless `TW_AKD_NOTIFY=1`. (Stage 2: `lib/mod_localauth.sh`; `tripwire scan` runs modules once.)
 - **Network**: SSH / screen-sharing login attempts (Stage 3: `lib/mod_netauth.sh`) and port probes against a honeypot listener.
 
 ## Layout

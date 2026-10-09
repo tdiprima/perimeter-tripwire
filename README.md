@@ -22,7 +22,7 @@ country, cloud/scanner/residential class, LAN MAC).
 
 Tuning: set env vars in the launchd plist `EnvironmentVariables` dict —
 `TW_INTERVAL`, `TW_HP_PORTS`, `TW_HP_ENABLED`, `TW_NOTIFY_COOLDOWN`, `TW_NOTIFY_MAX`,
-`TW_SNAPSHOT`, `TW_ROTATE_MB`, `TW_KEEP_DAYS`. After editing: `./install.sh`.
+`TW_SNAPSHOT`, `TW_AKD_NOTIFY` (1 = notify on akd stale-password checks; off by default), `TW_ROTATE_MB`, `TW_KEEP_DAYS`. After editing: `./install.sh`.
 See PLAN.md for the stage-by-stage design.
 
 ## Lessons learned
@@ -59,5 +59,9 @@ Every test runs in a throwaway HOME/log/state dir with stubbed `log`, `osascript
 `dig`, `whois`, `arp`, `route`, `launchctl` and `screencapture`, so fixtures are replayed instead of
 touching the real unified log, Notification Center, the network or launchd. The honeypot tests bind
 real loopback sockets on free ports.
+
+<!--
+The akd stale-password notification is now off by default (events are still logged as warn in events.jsonl). Set TW_AKD_NOTIFY=1 in the plist if you ever want it back.
+-->
 
 <br>
